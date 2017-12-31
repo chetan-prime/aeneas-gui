@@ -14,7 +14,7 @@
     "aeneas"
   ],
   "author": "Chetan Chauhan",
-  "license": "CC0-1.0",
+  "license": "AGPL-3.0",
   "devDependencies": {
     "electron": "~1.6.15",
     "electron-packager": "^9.1.0",
