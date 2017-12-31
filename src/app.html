@@ -1,0 +1,307 @@
+<link rel="import" href="../lib/polymer/polymer.html">
+<link rel="import" href="../lib/app-layout/app-drawer/app-drawer.html">
+<link rel="import" href="../lib/app-layout/app-drawer-layout/app-drawer-layout.html">
+<link rel="import" href="../lib/app-layout/app-header/app-header.html">
+<link rel="import" href="../lib/app-layout/app-header-layout/app-header-layout.html">
+<link rel="import" href="../lib/app-layout/app-scroll-effects/app-scroll-effects.html">
+<link rel="import" href="../lib/app-layout/app-toolbar/app-toolbar.html">
+<link rel="import" href="../lib/app-route/app-location.html">
+<link rel="import" href="../lib/app-route/app-route.html">
+<link rel="import" href="../lib/iron-pages/iron-pages.html">
+<link rel="import" href="../lib/paper-tabs/paper-tabs.html">
+<link rel="import" href="../lib/paper-icon-button/paper-icon-button.html">
+
+<link rel="import" href="../lib/neon-animation/web-animations.html">
+<link rel="import" href="../lib/paper-listbox/paper-listbox.html">
+<link rel="import" href="../lib/app-localize-behavior/app-localize-behavior.html">
+
+<link rel="import" href="components/app-styles.html">
+<!-- Views -->
+<link rel="import" href="views/edit-job.html">
+<link rel="import" href="views/settings-list.html">
+
+<dom-module id="aeneas-app">
+  <template>
+    <style>
+      :host {
+        --app-primary-color: #4285f4;
+        --app-secondary-color: black;
+        
+        --app-error-text-color: darkred;
+        
+        --app-input-button-color: black;
+        --app-input-button-background: #f0f0f0;
+        
+        --app-alt-button-color: #111177;
+        --app-alt-button-text-color: #ffffff;
+
+        display: block;
+      }
+
+      app-header {
+        color: #fff;
+        background-color: var(--app-primary-color);
+      }
+      app-header paper-icon-button {
+        --paper-icon-button-ink-color: white;
+      }
+
+      .drawer-list {
+        margin: 0 20px;
+      }
+
+      .drawer-list a {
+        padding: 0 16px;
+        text-decoration: none;
+        color: white;
+        font-size: 1.5em;
+        font-weight: 700;
+        line-height: 40px;
+      }
+
+      .drawer-list a.iron-selected {
+        color: black;
+        font-weight: bold;
+      }
+
+      iron-pages {
+        overflow: hidden;
+      }
+
+      .right {
+        float: right;
+      }
+    </style>
+
+    <app-location use-hash-as-path route="{{route}}"></app-location>
+    <app-route route="{{route}}" pattern="/:page" data="{{routeData}}"></app-route>
+
+    <!--app-drawer-layout fullbleed>
+      <app-header-layout has-scrolling-region-->
+        <!--app-header fixed>
+          <app-toolbar>
+            <paper-tabs selected="[[ page ]]" class="drawer-list" attr-for-selected="name">
+              <paper-tab name="edit-job"><a href="#/edit-job">[[ localize('edit_task') ]]</a></paper-tab>
+              <paper-tab name="settings-list"><a href="#/settings-list">[[ localize('settings_list') ]]</a></<paper-tab>
+            </paper-tabs>
+            <paper-dropdown-menu-light layered dynamic-align label="[[ localize('language') ]]" class="language">
+              <paper-listbox slot="dropdown-content" class="dropdown-content" attr-for-selected="value" selected="{{ language }}">
+                <paper-item value="en">English</paper-item>
+                <paper-item value="gr">Greek</paper-item>
+              </paper-listbox>
+            </paper-dropdown-menu-light>
+          </app-toolbar>
+        </app-heade>-->
+
+        <iron-pages
+          selected="[[page]]"
+          attr-for-selected="name"
+          fallback-selection="view404"
+          role="main">
+        <edit-job name="edit-job" config="{{ config }}" language="[[ language ]]"></edit-job>
+      </iron-pages>
+
+      <!--/app-header-layout>
+    </app-drawer-layout-->
+  </template>
+
+  <script>
+    //const {fs} = require('fs');
+    //const {path} = require('path');
+    
+    class AeneasApp extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+      static get is() { return 'aeneas-app' }
+
+      static get properties() {
+        return {
+          config: {
+            type: Object,
+            notify: true,
+            value: function() {
+              return undefined;
+            }
+          },
+          language: {
+            type: Object
+          },
+          language: {
+            type: String,
+            value: function() {
+              return "en";
+            }
+          },
+          page: {
+            type: String,
+            notify: true
+          },
+          title_id: {
+            type: String,
+            notify: true,
+            value: 'app_header_title'
+          }
+        }
+      }
+
+      static get observers() {
+        return [
+          '_routePageChanged(routeData.page)',
+          '_languageChanged(language)',
+          '_setConfig(config.*)',
+        ];
+      }
+      
+      static getConfigDir() {
+        const {app} = require('electron').remote;
+        
+        return app.getPath('userData');
+      }
+      
+      static _getConfig(json_only) {
+        var path = require('path');
+        var fs = require('fs');
+        
+        var configPath = path.join(AeneasApp.getConfigDir(),"config.json");
+        
+        var configJson = null;
+        try {
+          configJson = fs.readFileSync(configPath, 'utf8')
+        } catch (err) {
+          // Do Nothing
+        }
+        if (json_only)
+          return configJson;
+        
+        if (!configJson)
+          configJson = '{}';
+        var configObj = {};
+        try {
+          configObj=JSON.parse(configJson);
+        } catch(err) {
+          console.log(err);
+        }
+        
+        if (!configObj)
+          configObj = {};
+        
+        if (!configObj.aeneas_path)
+          configObj.aeneas_path="";
+        
+        return configObj;
+      }
+      
+      _setConfig(config) {
+        if (!this.config)
+          return;
+        
+        console.log("_setConfig/change detected/config=",config,"this.config=",this.config);
+        if (JSON.stringify(this.config) == JSON.stringify(AeneasApp._getConfig(true)))
+          return;
+        
+        var path = require('path');
+        var fs = require('fs');
+        
+        var configPath = path.join(AeneasApp.getConfigDir(),"config.json");
+        
+        var configJson = JSON.stringify(this.config)
+        fs.writeFile(configPath, configJson, 'utf8', function (err) {
+          if (err) {
+            return console.log(err);
+          }
+          console.log("Configuration was saved to "+configPath);
+        }); 
+      }
+      
+      static getLangResourcePath(lang, internal) {
+        const fs = require('fs');
+        
+        var jsonPath = "";
+        
+        if (internal) {
+          const {app} = require('electron').remote;
+          jsonPath = app.getAppPath() + '/assets/misc/' + lang + '.json';
+          
+          return jsonPath;
+        } else {
+          jsonPath = AeneasApp.getConfigDir() + '/' + lang + '.json';
+          try {
+            fs.accessSync(jsonPath, fs.constants.R_OK);
+            console.log("getResourceFile/Loading alternate resource for language "+lang+" from "+jsonPath);
+          } catch(err) {
+            jsonPath = Polymer.rootPath + '/assets/misc/' + lang + '.json';
+          }
+        }
+        return Polymer.ResolveUrl.resolveUrl(jsonPath);
+      }
+      
+      static timeToFloat(time) {
+        var tsplit = time.split(":");
+        if (tsplit.length<2)
+          return -1;
+        
+        if (tsplit.length==2) {
+          tsplit.push("00.000");
+        }
+        
+        var val =   (  parseInt(tsplit[0]) * 3600 )
+                  + (  parseInt(tsplit[1]) * 60   )
+                  + (  parseFloat(tsplit[2])      );
+        
+        return val;
+      }
+      
+      static copyFile(file, destfile) {
+		//include the fs, path modules
+		const fs = require('fs');
+		var source = fs.createReadStream(file);
+		var dest = fs.createWriteStream(destfile);
+
+		source.pipe(dest);
+		source.on('end', () => {
+		  console.log('Succesfully copied "'+file+'" to "'+destfile+'"');
+		});
+		source.on('error', function(err) {
+		  console.log(err);
+		});
+	  };
+
+      
+      _languageChanged(lang) {
+        var langurl = AeneasApp.getLangResourcePath(lang);
+        this.loadResources(langurl);
+        
+        console.log("Loaded translations from "+langurl);
+        
+        this.async( () => {
+          document.title = this.localize('app_title');
+        }, 100);
+      }
+      
+      ready() {
+        var rootPath = Polymer.ResolveUrl.resolveUrl(".");
+        Polymer.setRootPath(rootPath);
+        
+        super.ready();
+        // Apply a default route, but make sure refresh works.
+        window.location.hash = window.location.hash || "#/edit-job";
+        
+        this.async( () => {
+          this.config=AeneasApp._getConfig();
+          this.notifyPath('config');
+          this.notifyPath('config.aeneas_path');
+        },500);
+      }
+
+      _routePageChanged(p) {
+        this.page = p;
+        if (p=="edit-job") {
+          this.title_id = "app_header_task_page";
+        } else
+        if (p=="settings-list") {
+          this.title_id = "app_header_settings_page";
+        }
+      }
+    }
+
+    customElements.define(AeneasApp.is, AeneasApp);
+  </script>
+</dom-module>

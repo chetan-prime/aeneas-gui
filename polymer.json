@@ -1,0 +1,49 @@
+{
+  "entrypoint": "index.html",
+  "shell": "src/app.html",
+  "fragments": [
+    "src/views/*.html",
+    "src/components/*.html"
+  ],
+  "sources": [
+    "index.html",
+    "src/*.html",
+    "splash.html",
+    "assets/**/*",
+    "bower.json"
+  ],
+  "extraDependencies": [
+    "lib/app-layout/app-layout.html",
+    "lib/app-localize-behavior/app-localize-behavior.html",
+    "lib/app-route/app-route.html",
+    "lib/iron-ajax/iron-ajax.html",
+    "lib/iron-icon/iron-icon.html",
+    "lib/iron-pages/iron-pages.html",
+    "lib/neon-animation/neon-animation.html",
+    "lib/paper-input/paper-input.html",
+    "lib/paper-item/paper-item.html",
+    "lib/paper-listbox/paper-listbox.html",
+    "lib/paper-dropdown-menu/paper-dropdown-menu.html",
+    "lib/polymer/polymer.html",
+    "lib/web-animations-js/web-animations.min.html",
+    "lib/webcomponentsjs/webcomponents-lite.js",
+    "main.js",
+    "renderer.js",
+    "package.json",
+    "icon.png",
+    "LICENSE.md"
+  ],
+  "builds": [{
+    "addServiceWorker": true,
+    "bundle": false,
+    "addPushManifest": true,
+    "insertPrefetchLinks": false,
+    "js": {"minify": true},
+    "css": {"minify": true},
+    "html": {"minify": true},
+    "swPrecacheConfig": "sw-precache-config.js"
+  }],
+  "lint": {
+    "rules": ["polymer-2"]
+  }
+}

@@ -1,0 +1,328 @@
+<link rel="import" href="../../lib/polymer/polymer.html">
+
+<link rel="import" href="../../lib/neon-animation/web-animations.html">
+<link rel="import" href="../../lib/paper-input/paper-input.html">
+<link rel="import" href="../../lib/paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../lib/paper-listbox/paper-listbox.html">
+<link rel="import" href="../../lib/paper-item/paper-item.html">
+<link rel="import" href="../../lib/paper-button/paper-button.html">
+<link rel="import" href="../../lib/paper-slider/paper-slider.html">
+
+<!--
+    This is simply an href-like element that opens the given href in the
+    system's default browser, instead of in the Electron shell.
+-->
+<dom-module id="task-field">
+  <template>
+    <style include="app-styles">
+      paper-slider {
+        width: 100%;
+      }
+      
+      paper-dropdown-menu {
+        width: 100%;
+        max-width: 30em;
+        display: block;
+      }
+      
+      .validationFiller {
+        height: 1em;
+      }
+      
+      iron-label {
+        color: black;
+      }
+      
+      iron-label>span {
+        font-weight: 700;
+      }
+      
+      .slider > span {
+        display: inline-block;
+      }
+      
+      .slider > span:nth-of-type(1) {
+        width: 15em;
+      }
+      
+      .slider > span:nth-of-type(2) {
+        width: 25em;
+        vertical-align: middle;
+      }
+      
+      .inner_text {
+        white-space: pre-wrap;
+      }
+      
+      .file-open {
+        color: var(--app-input-button-color);
+        background-color: var(--app-input-button-background);
+        z-index: 10;
+      }
+      
+      .input-field {
+        position: relative;
+      }
+    </style>
+    <template is="dom-if" if="{{ _isTypeInput(fieldInfo) }}">
+      <div class="input-field">
+        <iron-label>
+          <span>[[ localize(fieldInfo.desc_id) ]]</span>
+          <paper-input no-label-float value="{{ value }}"></paper-input>
+        </iron-label>
+      </div>
+    </template>
+    <template is="dom-if" if="{{ _isTypeFileDialog(fieldInfo) }}">
+      <div class="input-field">
+        <iron-label>
+          <span>[[ localize(fieldInfo.desc_id) ]]</span>
+          <paper-input
+              no-label-float
+              value="{{ value }}"
+              required
+              pattern="^(\/|http[s]?:\/\/).*"
+              auto-validate
+              invalid="{{ fieldInfo.invalid }}"
+              error-message="[[ localize('invalid_filepath') ]]"">
+            <div slot="prefix">
+              <paper-button class="file-open" on-click="_openFileDialog">[[ _fileDialogButtonText(language, resources) ]]</paper-button>
+            </div>
+          </paper-input>
+        <iron-label>
+        <div class="validationFiller" hidden$="[[ !fieldInfo.invalid ]]"></div>
+      </div>
+    </template>
+    <template is="dom-if" if="{{ _isTypeSelect(fieldInfo) }}">
+      <iron-label>
+        <span>[[ localize(fieldInfo.desc_id) ]]</span>
+        <paper-dropdown-menu id="dropdown" no-label-float>
+          <paper-listbox slot="dropdown-content" class="dropdown-content" selected="{{ value }}" attr-for-selected="value">
+            <template is="dom-repeat" items="[[ fieldOpts ]]" as="opt">
+              <template is="dom-if" if="{{ _isObject(opt.desc) }}">
+                <paper-item value="[[ opt.value ]]">
+                  <paper-item-body>
+                    <template is="dom-if" if="[[ opt.desc.value_field ]]">
+                      <div>[[ localize(opt.desc.desc_id, opt.desc.value_field, opt.value) ]]</div>
+                    </template>
+                    <template is="dom-if" if="[[ !opt.desc.value_field ]]">
+                      <div>[[ localize(opt.desc.desc_id) ]]</div>
+                    </template>
+                  </paper-item-body>
+                </paper-item>
+              </template>
+              <template is="dom-if" if="{{ !_isObject(opt.desc) }}">
+                <paper-item value="[[ opt.value ]]">[[ opt.desc ]]</paper-item>
+              </template>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <template is="dom-if" if="[[ _hasInnerText(value,language) ]]">
+          <div class="inner_text" hidden$="[[ !_isObject(opt.desc) ]]">[[ _getInnerText(value,language) ]]</div>
+        </template>
+      </iron-label>
+    </template>
+    <template is="dom-if" if="{{ _isTypeSlider(fieldInfo) }}">
+      <div class="slider">
+        <span>
+          [[ localize(fieldInfo.desc_id) ]]
+        </span>
+        <span>
+          <paper-slider
+            value="{{ numValue }}"
+            editable="on"
+            min="[[ fieldInfo.min ]]"
+            max="[[ fieldInfo.max ]]"
+            step="[[ fieldInfo.step ]]">
+          </paper-slider>
+        </span>
+      </div>
+    </template>
+    <template is="dom-if" if="{{ _isTypeTime(fieldInfo) }}">
+      <iron-label>
+        <span>[[ localize(fieldInfo.desc_id) ]]</span>
+        <paper-input no-label-float type="time" step="0.001" value="{{ value }}"></paper-input>
+      </iron-label>
+      <!--paper-input	label="[[ localize(fieldInfo.desc_id) ]]"
+      				auto-validate
+      				pattern="^([0-1]?\d|2[0-3]):([0-5]\d):([0-5]\d)\.\d\d\d?$"
+      				value="{{ value }}"
+      				invalid="{{ fieldInfo.invalid }}">
+   	  </paper-input-->
+    </template>
+  </template>
+
+  <script>
+    class TaskField extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+      static get is() { return 'task-field' }
+
+      static get properties() {
+        return {
+          fieldInfo: Object,
+          value: {
+            type: String,
+            notify: true
+          },
+          language: String,
+          fieldOpts: {
+            type: Array,
+            value : function() {
+              return [];
+            }
+          },
+          numValue: {
+            type: Number,
+            notify: true,
+            value: 120.0
+          },
+          time: {
+            type: String,
+            value: "00:00:00"
+          },
+          confirmedTime: {
+            type: String,
+            value: "00:00:00"
+          }
+        }
+      }
+      
+      static get observers() {
+        return [
+          '_languageChanged(language)',
+          '_updateSelectOptsArray(fieldInfo.options)',
+          '_updateDropdownLabel(value)'
+        ];
+      }
+      
+      ready() {
+        super.ready();
+        
+        this.set("fieldInfo.invalid",false);
+      }
+      
+      _updateSelectOptsArray(obj) {
+        var arr=[];
+        for (const key in obj) {
+          var optObj = { value: key, desc: obj[key] };
+          arr.push(optObj);
+        }
+        
+        console.log("_updateSelectOptsArray(obj)/obj=",obj,"arr=",arr);
+        
+        this.fieldOpts=arr;
+        this._updateDropdownLabel();
+      }
+      
+      _updateDropdownLabel() {
+        if (this.fieldInfo && this._isTypeSelect(this.fieldInfo)) {
+          this.async( () => {
+            var dropdown=this.$$('#dropdown');
+            if (dropdown)
+              dropdown._selectedItemChanged(dropdown.selectedItem);
+          },200);
+        }
+      }
+      
+      _fileDialogButtonText(lang,res) {
+        var key=this.fieldInfo.create_file
+				?	"create_file"
+				:	"select_file";
+        var text=this.localize(key);
+        console.log("_fileDialogButtonText/lang="+lang+"/key="+key+"/text="+text);
+        
+        return text;
+      }
+      
+      _hasInnerText(key,lang) {
+        var info=this.fieldInfo;
+        return info.options && info.options[key] && this._isObject(info.options[key]) &&
+               ( info.options[key].inner_text || info.options[key].inner_text_id );
+      }      
+      
+      _getInnerText(key,lang) {
+        var info=this.fieldInfo;
+        var inner="";
+        if ( info.options && info.options[key] && this._isObject(info.options[key]) ) {
+          if (info.options[key].inner_text_id) {
+            inner=this.localize(info.options[key].inner_text_id);
+          } else
+          if (info.options[key].inner_text) {
+            inner=info.options[key].inner_text;
+          }
+        }
+        return inner;
+      }
+      
+      _languageChanged(lang) {
+        var langurl = AeneasApp.getLangResourcePath(lang);
+        this.loadResources(langurl);
+      }
+      
+      _isTypeInput(param) {
+        return param.type=="input";
+      }
+      
+      _isTypeFileDialog(param) {
+        return param.type=="filedialog";
+      }
+      
+      _isTypeSelect(param) {
+        return param.type=="select";
+      }
+      
+      _isTypeSlider(param) {
+        return param.type=="slider";
+      }
+      
+      _isTypeTime(param) {
+        return param.type=="time";
+      }
+      
+      _isObject(variable) {
+        return typeof variable === 'object';
+      }
+      
+      _propertyExists(prop) {
+        return prop !== undefined;
+      }
+      
+      _openFileDialog() {
+        const dialog = require('electron').remote.dialog;
+        
+        var dialogOpts = {	filters:	this.fieldInfo.filters,
+        					properties:	['openFile']
+        				 };
+        
+        if (this.fieldInfo.create_file)
+          dialogOpts.properties.push('promptToCreate');
+        
+        if (this.fieldInfo.value!="") {
+          dialogOpts.defaultPath = this.fieldInfo.value;
+        }
+        
+        var dialogFn = (filename) => {
+          var fname="";
+          if ((!!filename) && (filename.constructor === Array) && filename.length>0) {
+            fname=filename[0];
+          } else
+          if (typeof filename == "string") {
+            fname=filename;
+          }
+          
+          if (fname!="") {
+            this.set('value',fname);
+            this.notifyPath("value");
+          }
+        };
+        
+        if (this.fieldInfo.create_file) {
+          dialog.showSaveDialog(dialogOpts, dialogFn);
+        } else {
+          dialog.showOpenDialog(dialogOpts, dialogFn);
+        }
+      }
+      
+    }
+
+    customElements.define(TaskField.is, TaskField);
+  </script>
+</dom-module>

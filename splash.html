@@ -1,0 +1,46 @@
+<html>
+<head>
+  <style>
+    html, body {
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .bgsplash {
+      opacity: 1.0;
+      background: url("assets/img/Aeneas-gui-splash.png");
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      background-position: center top;
+
+      width:  495;
+      height: 290;
+      border: solid 2px rgba(0,0,0,0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="bgsplash"></div>
+  <script>
+    /*
+    var ipc = require('electron').ipcRenderer;
+    ipc.on('close-window', function(event, arg) {
+      console.log("Recieved close-window event");
+      setTimeout(() => {
+        var splash = document.querySelector("html");
+        if (splash) {
+          splash.style.opacity=0;
+          
+          var body = document.querySelector("body");
+          
+          setTimeout( () => {
+            body.style.width=0;
+            body.style.height=0;
+          },2000);
+        }
+      }, 100);
+    });*/
+  </script>
+</body>
+</html>

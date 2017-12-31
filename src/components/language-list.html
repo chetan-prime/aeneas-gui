@@ -1,0 +1,63 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+
+-->
+
+<link rel="import" href="../../lib/polymer/polymer-element.html">
+<link rel="import" href="../../lib/paper-dropdown-menu/paper-dropdown-menu-light.html">
+<link rel="import" href="task-field.html">
+
+<dom-module id="language-list">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+      }
+    </style>
+    <paper-dropdown-menu-light layered dynamic-align label="[[ localize('language') ]]" class="language">
+      <paper-listbox slot="dropdown-content" class="dropdown-content" attr-for-selected="value" selected="{{ value }}">
+        <paper-item value="en">English</paper-item>
+        <paper-item value="gr">Greek</paper-item>
+        <paper-item value="it">Italian</paper-item>
+      </paper-listbox>
+    </paper-dropdown-menu-light>
+  </template>
+  <script>
+    class LanguageList extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+      static get is() { return 'language-list'; }
+    
+      static get properties() {
+        return {
+          config: {
+            type: Object,
+            notify: true
+          },
+          language: String,
+          value: {
+            type: String,
+            notify: true
+          }
+        };
+      }
+      
+      static get observers() {
+        return [
+          '_languageChanged(language)'
+        ];
+      }
+      
+      _languageChanged(lang) {
+        var langurl = AeneasApp.getLangResourcePath(lang);
+        this.loadResources(langurl);
+      }
+    }
+
+    window.customElements.define(LanguageList.is, LanguageList);
+  </script>
+</dom-module>

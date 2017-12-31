@@ -1,0 +1,257 @@
+<!--
+@license
+Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
+This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
+The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
+The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
+Code distributed by Google as part of the polymer project is also
+subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
+
+-->
+
+<link rel="import" href="../../lib/polymer/polymer-element.html">
+<link rel="import" href="../../lib/paper-dropdown-menu/paper-dropdown-menu-light.html">
+<link rel="import" href="../../lib/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../lib/iron-flex-layout/iron-flex-layout-classes.html">
+
+<link rel="import" href="../components/task-field.html">
+<link rel="import" href="../components/language-list.html">
+
+<dom-module id="settings-list">
+  <template>
+    <style include="app-styles iron-flex iron-flex-alignment">
+      paper-icon-button {
+        width:  5em;
+        height: 5em;
+      }
+      paper-icon-button.green {
+        color: var(--paper-green-500);
+        --paper-icon-button-ink-color: var(--paper-indigo-500);
+      }
+      
+      paper-icon-button.pink {
+        color: var(--paper-pink-500);
+        --paper-icon-button-ink-color: var(--paper-red-500);
+      }
+      
+      paper-icon-button.blue {
+        color: var(--paper-blue-500);
+        --paper-icon-button-ink-color: var(--paper-yellow-500);
+      }
+      
+      #uploadError {
+        margin-top: 1em;
+      }
+      
+      .language {
+        padding-left: 0.5em;
+      }
+      
+    </style>
+    <task-field field-info="[[ params.aeneas_path ]]" value="{{ config.aeneas_path }}" language="[[ language ]]"></task-field>
+    <div>
+      <div class="layout horizontal end">
+        <div class="flex">
+          <task-field field-info="[[ params.custom_language_file ]]" value="{{ upload_langfile }}" language="[[ language ]]"></task-field>
+        </div>
+        <div class="language">
+          <language-list value="{{ upload_language }}" language="[[ language ]]"></language-list>
+        </div>
+        <div>
+          <paper-icon-button icon="file-upload" class="green" on-click="_uploadLanguageFile" title="[[ localize('upload_translation') ]]"></paper-icon-button>
+          <paper-icon-button icon="file-download" class="blue" on-click="_blueprintLanguageFile" title="[[ localize('download_translation') ]]"></paper-icon-button>
+          <paper-icon-button icon="delete" class="pink" on-click="_deleteCustomLanguage" title="[[ localize('delete_translation') ]]"></paper-icon-button>
+        </div>
+      </div>
+      <div id="uploadError">[[ upload_error ]]</div>
+    </div>
+  </template>
+  <script>
+    class SettingsList extends Polymer.mixinBehaviors([Polymer.AppLocalizeBehavior], Polymer.Element) {
+      static get is() { return 'settings-list'; }
+    
+      static get properties() {
+        return {
+          config: {
+            type: Object,
+            notify: true
+          },
+          language: String,
+          upload_language: {
+            type: String,
+            value: ""
+          },
+          upload_langfile: String,
+          upload_error: String,
+          params: Object,
+        };
+      }
+      
+      static get observers() {
+        return [
+          '_languageChanged(language)'
+        ];
+      }
+      
+      _languageChanged(lang) {
+        var langurl = AeneasApp.getLangResourcePath(lang);
+        this.loadResources(langurl);
+      }
+      
+      connectedCallback() {
+        super.connectedCallback();
+        
+        var winderz = process.platform=="win32";
+        
+        this.set("params" , {
+            aeneas_path: {
+                desc_id: 	winderz
+                			?	"aeneas_win_path"
+                			:	"aeneas_path",
+                value: 		winderz
+                			?	"C:\\Python27\\python.exe"
+                			:	"",
+                type: "filedialog",
+                filters: 	winderz
+                			?	[ {
+									name:	"EXE files",
+									extensions:	[ 'exe' ]	}
+								 ]
+                			:	undefined
+            },
+            custom_language_file: {
+                desc_id: "custom_language_file",
+                value: "",
+                type: "filedialog",
+                filters: [ {
+							name:	"Json files",
+							extensions:	[ 'json' ]	}
+						 ]
+           }
+        });
+        
+        this.async( () => {
+          this._resetConfig();
+        },1000);
+        
+        console.log("SettingsList/connectedCallback/params=",this.params);
+      }
+      
+      _resetConfig(force) {
+        var params = this.params;
+        this.parameters = params;
+        
+        if (!this.config["aeneas_path"] || this.config["aeneas_path"]=="") {
+          this.set("config.aeneas_path", params["aeneas_path"].value);
+          this.notifyPath("config.aeneas_path");
+          console.log("this.set(config.aeneas_path,"+params["aeneas_path"].value+");");
+        }
+      }
+      
+      _blueprintLanguageFile() {
+        if (this.upload_language && this.upload_language!="") {
+          const fs = require('fs');
+          const path = require('path');
+          
+          var enJson = fs.readFileSync(AeneasApp.getLangResourcePath("en", true), 'utf8');
+          var enObj = JSON.parse(enJson);
+          
+          var langJson = fs.readFileSync(AeneasApp.getLangResourcePath(this.upload_language, true), 'utf8');
+          var langObj = JSON.parse(langJson);
+          
+          for (var prop in enObj["en"]) {
+            if (!langObj[this.upload_language].hasOwnProperty(prop) || langObj[this.upload_language][prop]=="") {
+              langObj[this.upload_language][prop]=enObj["en"][prop];
+            }
+          }
+          
+          const {app} = require('electron').remote;
+          var docPath = "/tmp";
+          
+          try {
+            docPath = app.getPath("documents");
+          } catch(err) {
+            docPath = "/tmp"
+          }
+          
+          const dialog = require('electron').remote.dialog;
+          var dialogOpts =	{	filters:	[ {
+												name:	"json Files",
+												extensions:	[ 'json' ]	}
+											],
+		    					properties:	['openFile', 'promptToCreate'],
+		    					defaultPath:path.join(docPath,this.upload_language+".json")
+		    				};
+		  
+          dialog.showSaveDialog(dialogOpts, (filename) => {
+            var fname="";
+            if ((!!filename) && (filename.constructor === Array) && filename.length>0) {
+              fname=filename[0];
+            } else
+            if (typeof filename == "string") {
+              fname=filename;
+            }
+            
+            if (fname!="") {
+              langJson = JSON.stringify(langObj, null, 4);
+              if (langJson) {
+                fs.writeFileSync(fname, langJson);
+              }
+            }
+          });
+        } else {
+      	  this.set("upload_error",this.localize("custom_language_unselected"));
+        }
+      }
+      
+      _uploadLanguageFile() {
+        if (this.upload_language && this.upload_language!="") {
+          const path = require('path');
+          var upload_jsonfile = this.upload_language+".json";
+          if (		!this.upload_langfile
+          		||	this.upload_langfile==""
+          		||	path.basename(this.upload_langfile)!=upload_jsonfile ) {
+            this.set("upload_error",this.localize("custom_language_invalid","language",this.upload_language,"json_file",upload_jsonfile));
+          } else {
+            var upload_dest=path.join(AeneasApp.getConfigDir(),upload_jsonfile);
+            AeneasApp.copyFile(this.upload_langfile,upload_dest);
+            
+            this.set("upload_error",this.localize("custom_language_saved"));
+            
+            this.async( () => {
+              location.reload();
+            }, 3000);
+          }
+        } else {
+      	  this.set("upload_error",this.localize("custom_language_unselected"));
+        }
+        
+        this.$.uploadError.scrollIntoView(false);
+      }
+      
+      _deleteCustomLanguage() {
+        if (this.upload_language && this.upload_language!="") {
+          const path = require('path');
+          var upload_jsonfile = this.upload_language+".json";
+          var upload_dest=path.join(AeneasApp.getConfigDir(),upload_jsonfile);
+          
+          try {
+            const fs = require('fs');
+            console.log("Deleting custom translation @ "+upload_dest);
+            fs.unlinkSync(upload_dest);
+            
+            this.async( () => {
+              location.reload();
+            }, 3000);
+          } catch(err) {
+            // Do nothing
+          }
+          
+          this.set("upload_error",this.localize("custom_language_deleted","language",this.upload_language));
+        }
+      }
+    }
+
+    window.customElements.define(SettingsList.is, SettingsList);
+  </script>
+</dom-module>

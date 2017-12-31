@@ -1,0 +1,14 @@
+{
+	"gr":	{
+				"app_title":	"Διευθυντής του Αἰνείας",
+			"app_header_title":	"Aeneas Job Manager",
+			"task_custom_id":	"Custom ID",
+				"description":	"περιγραφή",
+				"is_text_type":	"The format of the input text file",
+				"language":		"Γλώσσα",
+				"menu":			"μενού",
+				"new_task":		"New Task",
+				"select_file":	"Επιλέξτε Αρχείο",
+			"task_parameters":	"Task Parameters"
+			}
+}

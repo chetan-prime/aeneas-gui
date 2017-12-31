@@ -1,0 +1,78 @@
+#!/bin/bash
+# This is a very simple example on how to bundle a Python application as an AppImage
+# using virtualenv and AppImageKit using Ubuntu
+# NOTE: Please test the resulting AppImage on your target systems and copy in any additional
+# libraries and/or dependencies that might be missing on your target system(s).
+
+########################################################################
+# Source some helper functions
+########################################################################
+
+wget -q https://github.com/probonopd/AppImages/raw/master/functions.sh -O ./functions.sh
+. ./functions.sh
+
+########################################################################
+# Create the AppDir
+########################################################################
+
+APP=aeneas-gui
+LOWERAPP=aeneas-gui
+DIST=${APP}.AppDir
+
+ARCH=x86_64
+export ARCH
+
+cd build/default/ || exit
+
+if [[ -d appimage ]]; then
+  echo Aborting recipe creation as appimage folder already exists
+  exit
+fi
+
+mkdir appimage
+
+########################################################################
+# Copy the electron package into appimage
+########################################################################
+
+mkdir -p appimage/$DIST
+mkdir -p appimage/$DIST/usr/bin
+
+cp -r aeneas-gui-linux-x64/* appimage/$DIST/usr/bin/
+
+cd appimage/$DIST/
+
+########################################################################
+# Finalize the AppDir
+########################################################################
+
+get_apprun
+
+cat > $APP.desktop <<EOF
+[Desktop Entry]
+Name=$APP
+Exec=$LOWERAPP
+Icon=$APP
+Comment=Aeneas Task Manager
+EOF
+
+# Make the AppImage ask to "install" itself into the menu
+get_desktopintegration $APP
+
+cp ../../../../icon.png $APP.png
+
+VERSION=1
+
+########################################################################
+# Package the AppDir as an AppImage
+########################################################################
+
+# At this point, you should be able to run the application by executing
+# ./AppRun
+
+cd ..
+
+generate_appimage
+
+
+
