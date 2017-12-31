@@ -93,7 +93,7 @@ We use [git](http://git.org/) for versioning. For the versions available, see th
 ## Authors
 
 * **Chetan Chauhan** - *Initial work* - [chetan-prime](https://github.com/chetan-prime)
-
+* **Michele Gianella** - *Project Designer*
 See also the list of [contributors](https://github.com/chetan-prime/aeneas-gui/CONTRIBUTORS.md) who participated in this project.
 
 ## License
